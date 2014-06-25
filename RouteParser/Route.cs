@@ -36,7 +36,12 @@ namespace RouteParser
                     this._name = value;
                 }
             }
-            
+
+
+            public static bool includes(string candidate)
+            {
+                return Regex.IsMatch(candidate, @"\w{3,5}");
+            }
             public string getRepresentation()
             {
                 
@@ -82,6 +87,10 @@ namespace RouteParser
             public string getRepresentation()
             {
                 return string.Format("{0}{1}", this._latitude, this._longitude);
+            }
+            public static bool includes(string candidate)
+            {
+                return Regex.IsMatch(candidate, @"\d{2}[N,S]\d{3}[W,E]");
             }
         }
         class NavaidPoint : IPoint
@@ -137,7 +146,10 @@ namespace RouteParser
             {
                 return string.Format("{0}{1}{2}", this._navaidname, this._bearing,this._distance);
             }
-
+            public static bool includes(string candidate)
+            {
+                return Regex.IsMatch(candidate, @"\w{2,3}\d{3}\d{3}");
+            }
         }
         class SpeedLevel : IRouteElement
         {
@@ -152,6 +164,10 @@ namespace RouteParser
             public string getRepresentation()
             {
                 return string.Format("{0}{1}", this._cruisingspeed, this._flightlevel);
+            }
+            public static bool includes(string candidate)
+            {
+                return Regex.IsMatch(candidate, @"(?<speed>[K,N]\d{4}|M\d{3})(?<clevel>([A,F]\d{3})|[S,M]\d{4})");
             }
         }
         private List<IRouteElement> _path;        
