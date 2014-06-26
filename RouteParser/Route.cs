@@ -14,7 +14,7 @@ namespace RouteParser
         public static bool isNamedPoint(string candidate)
         {
             //Check name length
-            return Regex.IsMatch(candidate, @"\w{2,5}");
+            return Regex.IsMatch(candidate, @"\D{2,5}");
         }
         public static bool isCoordinatePoint(string candidate)
         {
@@ -56,6 +56,24 @@ namespace RouteParser
         public interface IRouteElement
         {
             string getRepresentation();
+        }
+        abstract class RouteElement
+        {
+            private string _representation;
+            protected static abstract Regex elementPattern;
+            static bool isValid(string candidate) { return elementPattern.IsMatch(candidate); }
+            public string representation
+            {
+                get
+                {
+                    return this._representation;
+                }
+            }
+            public RouteElement(string representation)
+            {
+                this._representation = representation;
+            }            
+
         }
         interface IPoint : IRouteElement
         {
@@ -155,8 +173,8 @@ namespace RouteParser
             private string _cruisingspeed;
             private string _flightlevel;
 
-            enum SpeedUnit { Kilometer="K",Knot="N",Mach="M"}
-            enum LevelUnit { FlightLevel="F", StandardMetricLevel="S", AltitudeInFeet = "A", AltitudeInMeter="M"}
+            //enum SpeedUnit { Kilometer="K",Knot="N",Mach="M"}
+            //enum LevelUnit { FlightLevel="F", StandardMetricLevel="S", AltitudeInFeet = "A", AltitudeInMeter="M"}
             
             public SpeedLevel(string cruisingspeed, string flightlevel)
             {
@@ -251,7 +269,7 @@ namespace RouteParser
         {
             Route result = new Route();
             String[] routeelements = routestring.Split();
-            for (int i = 0; i < routeelements.Length; i++ )
+            for (int i = 0; i < routeelements.Length-1; i++ )
             {
                 if (isDirect(routeelements[i]))
                 {
@@ -268,22 +286,39 @@ namespace RouteParser
                     result.path.Add(new ChangeOfSpeedLevelPoint(routeelements[i]));
                     continue;
                 }
+                if (isSpeedLevel(routeelements[i]))
+                {
+                    result.path.Add(new SpeedLevel(routeelements[i]));
+                    continue;
+                }
+                if (isCoordinatePoint(routeelements[i]))
+                {
+                    result.path.Add(new CoordinatePoint(routeelements[i]));
+                    continue;
+                }
+                if (isNavaidPoint(routeelements[i]))
+                {
+                    result.path.Add(new NavaidPoint(routeelements[i]));
+                    continue;
+                }
+                //Either airway or namedpoint
+                string previouselement = (i < 1) ? "" : routeelements[i - 1];
+                string nextelement = (i > routeelements.Length - 2) ? "" : routeelements[i + 1];
+                if (isNamedPoint(routeelements[i]) & !isNamedPoint(previouselement))
+                {
+                    result.path.Add(new NamedPoint(routeelements[i]));
+                    continue;
+                }
+                if (isAirway(routeelements[i]))
+                {
+                    
+                    result.path.Add(new Airway(routeelements[i]));
+                    continue;
+                }
+                
+                Console.WriteLine(routeelements[i] + " FELL THROUGH CHECK IT");
             }
             return result;
-        }
-        public static IRouteElement StringToRouteElement(string elementstring)
-        {
-            if (isChangeOfFlightRule(elementstring)) { return new ChangeOfFlightRule(elementstring); }
-            if (isChangeOfSpeedLevelPoint(elementstring)) { return new ChangeOfSpeedLevelPoint(elementstring); }
-            if (isSpeedLevel(elementstring)) { return new SpeedLevel(elementstring); }
-            if (isCoordinatePoint(elementstring)) { return new CoordinatePoint(elementstring); }
-            if (isNavaidPoint(elementstring)) { return new NavaidPoint(elementstring); }
-            if (isAirway(elementstring)) { return new Airway(elementstring); }
-            if (isNamedPoint(elementstring)) { return new NamedPoint(elementstring); }
-            else
-            {
-                throw new Exception("YO IT FELL THROUGH!");
-            }
         }
     }
 }
