@@ -170,6 +170,22 @@ namespace RouteParser
                 return Regex.IsMatch(candidate, @"(?<speed>[K,N]\d{4}|M\d{3})(?<clevel>([A,F]\d{3})|[S,M]\d{4})");
             }
         }
+        class Airway : IRouteElement
+        {
+            private string _designator;
+            public Airway(string designator)
+            {
+                this._designator = designator;
+            }
+            public string getRepresentation()
+            {
+                return this._designator;
+            }
+            public static bool includes(string candidate)
+            {
+                return Regex.IsMatch(candidate, @"\w{2,7}");
+            }
+        }
         private List<IRouteElement> _path;        
         public Route()
         {
