@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-///TODO IMPLEMENT isElementOf in all methods ex: NamedPoint.isElementOf("CARPE") --> true
 namespace RouteParser
 {
     class Route
@@ -20,11 +19,11 @@ namespace RouteParser
         public static bool isCoordinatePoint(string candidate)
         {
             //Latitude and Longitude OR Degrees and Minutes
-            return Regex.IsMatch(candidate, @"\d{2}[N,S]\d{3}[E,W]") | Regex.IsMatch(candidate, @"\d{4}[N,S]\d{5}[E,W]");
+            return Regex.IsMatch(candidate, @"(?<vertical>(\d{2}|\d{4})[N,S])(?<horizontal>((\d{3}|\d{5})[E,W]))");
         }
         public static bool isNavaidPoint(string candidate)
         {
-            return Regex.IsMatch(candidate, @"\w{2,3}\d{3}\d{3}");
+            return Regex.IsMatch(candidate, @"(?<navaid>\w{2,3})(?<bearing>\d{3})(?<distance>\d{3})");
         }
         public static bool isSpeedLevel(string candidate)
         {
@@ -32,12 +31,12 @@ namespace RouteParser
         }
         public static bool isAirway(string candidate)
         {
-            return Regex.IsMatch(candidate, @"\w{2,7}");
+            return Regex.IsMatch(candidate, @"(\D{1,4}\d{1,4})");
         }
         public static bool isChangeOfSpeedLevelPoint(string candidate)
             {
                 try{
-                string [] candidateparts = candidate.Split(new char['/']);
+                string [] candidateparts = candidate.Split('/');
                 string point = candidateparts[0];
                 string speedlevel = candidateparts[1];
                 return isPoint(point) & isSpeedLevel(speedlevel);
@@ -50,7 +49,11 @@ namespace RouteParser
         {
             return Regex.IsMatch(candidate, @"IFR|VFR");
         }
-        interface IRouteElement
+        public static bool isDirect(string candidate)
+        {
+            return candidate.Equals("DCT");
+        }
+        public interface IRouteElement
         {
             string getRepresentation();
         }
@@ -94,40 +97,28 @@ namespace RouteParser
         }
         class CoordinatePoint : IPoint
         {
-            private string _latitude;
-            private string _longitude;
+            private string _verticalcoord;
+            private string _horizontalcoord;
 
-            public CoordinatePoint(string latitude, string longitude)
+            public CoordinatePoint(string verticalcoord, string horizontalcoord)
             {
-                this._latitude = latitude;
-                this._longitude = longitude;
+                this._verticalcoord = verticalcoord;
+                this._horizontalcoord = horizontalcoord;
             }
-            public string latitude
+            public CoordinatePoint(string verticalcoordhorizontalcoord)
             {
-                get
-                {
-                    return this._latitude;
-                }
-                set
-                {
-                    this._latitude = value;
-                }
-            }
-            public string longitude
-            {
-                get
-                {
-                    return this._longitude;
-                }
-                set
-                {
-                    this._longitude = value;
-                }
+                Match m = Regex.Match(verticalcoordhorizontalcoord, @"(?<vertical>(\d{2}|\d{4})[N,S])(?<horizontal>((\d{3}|\d{5})[E,W]))");
+                this._verticalcoord = m.Groups["vertical"].Value;
+                this._horizontalcoord = m.Groups["horizontal"].Value;
             }
             public string getRepresentation()
             {
-                return string.Format("{0}{1}", this._latitude, this._longitude);
+                return string.Format("{0}{1}", this._verticalcoord, this._horizontalcoord);
             }
+            //NOT YET IMPLEMENTED
+            public string latitude { get { return string.Empty; } }
+            //NOT YET IMPLEMENTED
+            public string longitude { get { return string.Empty; } }
         }
         class NavaidPoint : IPoint
         {
@@ -141,38 +132,13 @@ namespace RouteParser
                 this._bearing = bearing;
                 this._distance = distance;
             }
-            public string navaidname
+            public NavaidPoint(string navaidnamebearingdistance)
             {
-                get
-                {
-                    return this._navaidname;
-                }
-                set
-                {
-                    this._navaidname = value;
-                }
-            }
-            public string bearing
-            {
-                get
-                {
-                    return this._bearing;
-                }
-                set
-                {
-                    this._bearing = value;
-                }
-            }
-            public string distance
-            {
-                get
-                {
-                    return this._distance;
-                }
-                set
-                {
-                    this._distance = value;
-                }
+                Match m = Regex.Match(navaidnamebearingdistance, @"(?<navaid>\w{2,3})(?<bearing>\d{3})(?<distance>\d{3})");
+                this._navaidname = m.Groups["navaid"].Value;
+                this._bearing = m.Groups["bearing"].Value;
+                this._distance = m.Groups["distance"].Value;
+
             }
             //NOT YET IMPLEMENTED
             public string latitude { get { return string.Empty; } }
@@ -189,10 +155,19 @@ namespace RouteParser
             private string _cruisingspeed;
             private string _flightlevel;
 
+            enum SpeedUnit { Kilometer="K",Knot="N",Mach="M"}
+            enum LevelUnit { FlightLevel="F", StandardMetricLevel="S", AltitudeInFeet = "A", AltitudeInMeter="M"}
+            
             public SpeedLevel(string cruisingspeed, string flightlevel)
             {
                 this._cruisingspeed = cruisingspeed;
                 this._flightlevel = flightlevel;
+            }
+            public SpeedLevel(string speedlevel)
+            {
+                Match m =  Regex.Match(speedlevel, @"(?<speed>[K,N]\d{4}|M\d{3})(?<clevel>([A,F]\d{3})|[S,M]\d{4})");
+                this._cruisingspeed = m.Groups["speed"].Value;
+                this._flightlevel = m.Groups["clevel"].Value;
             }
             public string getRepresentation()
             {
@@ -223,6 +198,13 @@ namespace RouteParser
                 this._point = point;
                 this._speedlevel = speedlevel;
             }
+            public ChangeOfSpeedLevelPoint(string pointlevel)
+            {
+
+                    string[] pointlevelparts = pointlevel.Split('/');
+                    this._point = pointlevelparts[0];
+                    this._speedlevel = pointlevelparts[1];
+            }
             public string getRepresentation()
             {
                 return string.Format("{0}{1}", this._point, this._speedlevel);
@@ -241,19 +223,67 @@ namespace RouteParser
                 return this._flightrule;
             }
         }
+        class Direct : IRouteElement
+        {
+            public string getRepresentation()
+            {
+                return "DCT";
+            }
+        }
         private List<IRouteElement> _path;
         public Route()
         {
             this._path = new List<IRouteElement>();
         }
+        public List<IRouteElement> path
+        {
+            get
+            {
+                return this._path;
+            }
+            set
+            {
+                this._path = value;
+            }
+        }
 
-
-        public static Route parseString(string routestring)
+        public static Route StringToRoute(string routestring)
         {
             Route result = new Route();
             String[] routeelements = routestring.Split();
-            Console.WriteLine(string.Join(Environment.NewLine, routeelements));
+            for (int i = 0; i < routeelements.Length; i++ )
+            {
+                if (isDirect(routeelements[i]))
+                {
+                    result.path.Add(new Direct());
+                    continue;
+                }
+                if (isChangeOfFlightRule(routeelements[i]))
+                {
+                    result.path.Add(new ChangeOfFlightRule(routeelements[i]));
+                    continue;
+                }
+                if (isChangeOfSpeedLevelPoint(routeelements[i]))
+                {
+                    result.path.Add(new ChangeOfSpeedLevelPoint(routeelements[i]));
+                    continue;
+                }
+            }
             return result;
+        }
+        public static IRouteElement StringToRouteElement(string elementstring)
+        {
+            if (isChangeOfFlightRule(elementstring)) { return new ChangeOfFlightRule(elementstring); }
+            if (isChangeOfSpeedLevelPoint(elementstring)) { return new ChangeOfSpeedLevelPoint(elementstring); }
+            if (isSpeedLevel(elementstring)) { return new SpeedLevel(elementstring); }
+            if (isCoordinatePoint(elementstring)) { return new CoordinatePoint(elementstring); }
+            if (isNavaidPoint(elementstring)) { return new NavaidPoint(elementstring); }
+            if (isAirway(elementstring)) { return new Airway(elementstring); }
+            if (isNamedPoint(elementstring)) { return new NamedPoint(elementstring); }
+            else
+            {
+                throw new Exception("YO IT FELL THROUGH!");
+            }
         }
     }
 }
