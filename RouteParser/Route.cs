@@ -40,7 +40,7 @@ namespace RouteParser
 
             public static bool includes(string candidate)
             {
-                return Regex.IsMatch(candidate, @"\w{3,5}");
+                return Regex.IsMatch(candidate, @"\w{2,5}");
             }
             public string getRepresentation()
             {
@@ -90,7 +90,8 @@ namespace RouteParser
             }
             public static bool includes(string candidate)
             {
-                return Regex.IsMatch(candidate, @"\d{2}[N,S]\d{3}[W,E]");
+                //Latitude and Longitude OR Degrees and Minutes
+                return Regex.IsMatch(candidate, @"\d{2}[N,S]\d{3}[E,W]") | Regex.IsMatch(candidate, @"\d{4}[N,S]\d{5}[E,W]");
             }
         }
         class NavaidPoint : IPoint
@@ -186,6 +187,21 @@ namespace RouteParser
                 return Regex.IsMatch(candidate, @"\w{2,7}");
             }
         }
+        class ChangeOfSpeedLevelPoint : IRouteElement
+        {
+            private string _point;
+            private string _speedlevel;
+
+            public ChangeOfSpeedLevelPoint(string point, string speedlevel)
+            {
+                this._point = point;
+                this._speedlevel = speedlevel;
+            }
+            public string getRepresentation()
+            {
+                return string.Format("{0}{1}", this._point, this._speedlevel);
+            }
+        }
         private List<IRouteElement> _path;        
         public Route()
         {
@@ -196,7 +212,7 @@ namespace RouteParser
         public static Route parseString(string routestring)
         {
             Route result = new Route();
-            String [] routeelements = Regex.Split(routestring, @"\s|/");
+            String[] routeelements = routestring.Split();
             Console.WriteLine(string.Join(Environment.NewLine, routeelements));
             return result;
         }
