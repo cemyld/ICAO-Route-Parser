@@ -8,47 +8,194 @@ namespace RouteParser
 {
     public class Route
     {
-        //Unit enumerations and symbols
-        public class Symbol : Attribute {
-            public string symbol { get; protected set; }
-            public Symbol(string value) {
-                this.symbol = value;
+       
+
+        /// <summary>
+        /// Base class for Enum-like strings
+        /// 
+        /// Includes equality plumbing in case you're dealing in copies of StringEnums.
+        /// </summary>
+        [Serializable]
+        public abstract class StringEnum : Object
+        {
+            protected readonly string _name;
+            protected readonly int _value;
+
+            protected StringEnum(int value, string name)
+            {
+                _name = name;
+                _value = value;
+            }
+
+            public override string ToString()
+            {
+                return _name;
+            }
+
+            public static implicit operator string(StringEnum x)
+            {
+                return x._name;
+            }
+
+            public static implicit operator int(StringEnum x)
+            {
+                return x._value;
+            }
+
+            public static bool operator ==(StringEnum x, StringEnum y)
+            {
+                if (((object)x == null) || ((object)y == null))
+                {
+                    return false;
+                }
+
+                if (Object.ReferenceEquals(x, y))
+                {
+                    return true;
+                }
+
+                return (x._value == y._value);
+            }
+
+            public static bool operator !=(StringEnum x, StringEnum y)
+            {
+                return !(x._value == y._value);
+            }
+
+            public override bool Equals(object obj)
+            {
+                StringEnum p = obj as StringEnum;
+
+                if ((object)p == null)
+                {
+                    return false;
+                }
+
+                return (_value == p._value);
+            }
+
+            public bool Equals(StringEnum flag)
+            {
+                return (_value == flag._value);
+            }
+
+            public override int GetHashCode()
+            {
+                return _value.GetHashCode();
             }
         }
-        public static string GetEnumSymbol(Enum value)
+        //String Enums begin
+        /// <summary>
+        /// Class for holding cruising speed units
+        /// 
+        /// Includes Kilometer, Knot and Mach
+        /// </summary>
+        [Serializable]
+        public sealed class SpeedUnit : StringEnum
         {
-            // Get the type
-            Type type = value.GetType();
+            private static readonly SpeedUnit _Kilometer = new SpeedUnit(1, "K");
+            private static readonly SpeedUnit _Knot = new SpeedUnit(2, "N");
+            private static readonly SpeedUnit _Mach = new SpeedUnit(3, "M");
 
-            // Get fieldinfo for this type
-            FieldInfo fieldInfo = type.GetField(value.ToString());
+            public static SpeedUnit Kilometer { get { return _Kilometer; } }
+            public static SpeedUnit Knot { get { return _Knot; } }
+            public static SpeedUnit Mach { get { return _Mach; } }
 
-            // Get the stringvalue attributes
-            Symbol[] attribs = fieldInfo.GetCustomAttributes(
-                typeof(Symbol), false) as Symbol[];
+            private SpeedUnit(int value, string name)
+                : base(value, name)
+            { }
 
-            // Return the first if there was a match.
-            return attribs.Length > 0 ? attribs[0].symbol : null;
+            public static implicit operator SpeedUnit(string x)
+            {
+                switch (x)
+                {
+                    case "K":
+                        return SpeedUnit.Kilometer;
+                    case "N":
+                        return SpeedUnit.Knot;
+                    case "M":
+                        return SpeedUnit.Mach;
+                    default:
+                        return default(SpeedUnit);
+                }
+            }
+
+            public static implicit operator SpeedUnit(int x)
+            {
+                switch (x)
+                {
+                    case 1:
+                        return SpeedUnit.Kilometer;
+                    case 2:
+                        return SpeedUnit.Knot;
+                    case 3:
+                        return SpeedUnit.Mach;
+                    default:
+                        return default(SpeedUnit);
+                }
+            }
         }
-        public enum SpeedUnit{
-            [Symbol("K")]
-            Kilometer=0,
-            [Symbol("N")]
-            Knot=1,
-            [Symbol("M")]
-            Mach=2
+        /// <summary>
+        /// Class for holding flight level units
+        /// 
+        /// Includes Standard Flight Level, Standard Metric, Altitude in Feet and Altitude in Meters
+        /// </summary>
+        [Serializable]
+        public sealed class LevelUnit : StringEnum
+        {
+            private static readonly LevelUnit _FlightLevel = new LevelUnit(1, "F");
+            private static readonly LevelUnit _StandardMetric = new LevelUnit(2, "S");
+            private static readonly LevelUnit _AltitudeInFeet = new LevelUnit(3, "A");
+            private static readonly LevelUnit _AltitudeInMeter = new LevelUnit(4, "M");
+
+            public static LevelUnit FlightLevel { get { return _FlightLevel; } }
+            public static LevelUnit StandardMetric { get { return _StandardMetric; } }
+            public static LevelUnit AltitudeInFeet { get { return _AltitudeInFeet; } }
+            public static LevelUnit AltitudeInMeter { get { return _AltitudeInMeter; } }
+
+            private LevelUnit(int value, string name)
+                : base(value, name)
+            { }
+
+            public static implicit operator LevelUnit(string x)
+            {
+                switch (x)
+                {
+                    case "F":
+                        return LevelUnit.FlightLevel;
+                    case "S":
+                        return LevelUnit.StandardMetric;
+                    case "A":
+                        return LevelUnit.AltitudeInFeet;
+                    case "M":
+                        return LevelUnit.AltitudeInMeter;
+                    default:
+                        return default(LevelUnit);
+                }
+            }
+
+            public static implicit operator LevelUnit(int x)
+            {
+                switch (x)
+                {
+                    case 1:
+                        return LevelUnit.FlightLevel;
+                    case 2:
+                        return LevelUnit.StandardMetric;
+                    case 3:
+                        return LevelUnit.AltitudeInFeet;
+                    case 4:
+                        return LevelUnit.AltitudeInMeter;
+                    default:
+                        return default(LevelUnit);
+                }
+            }
         }
-        public enum LevelUnit{
-            [Symbol("F")]
-            FlightLevel=0,
-            [Symbol("S")]
-            StandardMetricLevel=1,
-            [Symbol("A")]
-            AltitudeInFeet=2,
-            [Symbol("M")]
-            AltitudeInMeter=3
-        }
-        //Route elements begin
+        /// <summary>
+        /// Classes for representing route elements
+        /// 
+        /// Includes significant points, airways, directs, change of flight speeds and rules
+        /// </summary>
         abstract class RouteElement
         {
             private string _representation;
@@ -64,7 +211,7 @@ namespace RouteParser
 
                 this._representation = representation;
             }
-        }     
+        }
         class NamedPoint : RouteElement
         {
             public static bool isValid(string candidate)
@@ -146,7 +293,7 @@ namespace RouteParser
                 return Regex.IsMatch(candidate, @"(?<speed>[K,N]\d{4}|M\d{3})(?<clevel>([A,F]\d{3})|[S,M]\d{4})");
             }
             public SpeedLevel(SpeedUnit speedunit, string speed, LevelUnit levelunit, string level)
-                :base(GetEnumSymbol(speedunit)+speed+GetEnumSymbol(levelunit)+level)
+                :base(speedunit+speed+levelunit+level)
             {
                 this._speedunit = speedunit;
                 this._speed = speed;
@@ -190,7 +337,11 @@ namespace RouteParser
             }
 
         }
-        //Construction classes
+        /// <summary>
+        /// Factory class to create route elements
+        /// 
+        /// Needs two adjacent elements to correctly parse the current string, it is to be used by route constructor
+        /// </summary>
         class RouteElementFactory
         {
             public static RouteElement GetRouteElement(RouteElement previous, string current, string next)
@@ -218,35 +369,9 @@ namespace RouteParser
                         SpeedUnit spunit;
                         LevelUnit lvlunit;
                         //Get units for speed and level
-                        switch ((char)speed[0])
-                        {
-                            case 'K':
-                                spunit = SpeedUnit.Kilometer;
-                                break;
-                            case 'N':
-                                spunit = SpeedUnit.Knot;
-                                break;
-                            //case 'M'
-                            default:
-                                spunit = SpeedUnit.Mach;
-                                break;
-                        }
-                        switch ((char)level[0])
-                        {
-                            case 'F':
-                                lvlunit = LevelUnit.FlightLevel;
-                                break;
-                            case 'S':
-                                lvlunit = LevelUnit.StandardMetricLevel;
-                                break;
-                            case 'A':
-                                lvlunit = LevelUnit.AltitudeInFeet;
-                                break;
-                            //case 'M'
-                            default:
-                                lvlunit = LevelUnit.AltitudeInMeter;
-                                break;
-                        }
+                        spunit = speed.Substring(0,1);
+                        lvlunit = level.Substring(0,1);
+                        Console.WriteLine(string.Format("Speed unit {0}, Level unit {1}", spunit, lvlunit));
                         speed = speed.Substring(1);
                         level = level.Substring(1);
                         element = new SpeedLevel(spunit, speed, lvlunit, level);
@@ -347,7 +472,12 @@ namespace RouteParser
         }
         //Attributes
         private List<RouteElement> routeElements;
-        //Constructor and helper methods
+        /// <summary>
+        /// Constructs a route object from a given string in ICAO Route Plan format
+        /// 
+        /// Only use in conjunction with valid route strings
+        /// </summary>
+        /// <param name="routestring"></param>
         public Route(string routestring)
         {
             this.routeElements = new List<RouteElement>();
@@ -366,6 +496,10 @@ namespace RouteParser
             RouteElement lastElement = RouteElementFactory.GetRouteElement(this.routeElements[this.routeElements.Count - 1], routestringparts[routestringparts.Length - 1], string.Empty);
             this.routeElements.Add(lastElement);
         }
+        /// <summary>
+        /// Prints out the representation and type of each route element in the current instance on a new line
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             StringBuilder strbuilder = new StringBuilder();
