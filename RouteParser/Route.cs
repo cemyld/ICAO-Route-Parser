@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 namespace RouteParser
@@ -18,28 +17,28 @@ namespace RouteParser
         [Serializable]
         public abstract class StringEnum : Object
         {
-            protected readonly string _name;
-            protected readonly int _value;
+            protected readonly string Name;
+            protected readonly int Value;
 
             protected StringEnum(int value, string name)
             {
-                _name = name;
-                _value = value;
+                Name = name;
+                Value = value;
             }
 
             public override string ToString()
             {
-                return _name;
+                return Name;
             }
 
             public static implicit operator string(StringEnum x)
             {
-                return x._name;
+                return x.Name;
             }
 
             public static implicit operator int(StringEnum x)
             {
-                return x._value;
+                return x.Value;
             }
 
             public static bool operator ==(StringEnum x, StringEnum y)
@@ -49,17 +48,17 @@ namespace RouteParser
                     return false;
                 }
 
-                if (Object.ReferenceEquals(x, y))
+                if (ReferenceEquals(x, y))
                 {
                     return true;
                 }
 
-                return (x._value == y._value);
+                return (x.Value == y.Value);
             }
 
             public static bool operator !=(StringEnum x, StringEnum y)
             {
-                return !(x._value == y._value);
+                return !(x.Value == y.Value);
             }
 
             public override bool Equals(object obj)
@@ -71,17 +70,17 @@ namespace RouteParser
                     return false;
                 }
 
-                return (_value == p._value);
+                return (Value == p.Value);
             }
 
             public bool Equals(StringEnum flag)
             {
-                return (_value == flag._value);
+                return (Value == flag.Value);
             }
 
             public override int GetHashCode()
             {
-                return _value.GetHashCode();
+                return Value.GetHashCode();
             }
         }
         //String Enums begin
@@ -110,11 +109,11 @@ namespace RouteParser
                 switch (x)
                 {
                     case "K":
-                        return SpeedUnit.Kilometer;
+                        return Kilometer;
                     case "N":
-                        return SpeedUnit.Knot;
+                        return Knot;
                     case "M":
-                        return SpeedUnit.Mach;
+                        return Mach;
                     default:
                         return default(SpeedUnit);
                 }
@@ -125,11 +124,11 @@ namespace RouteParser
                 switch (x)
                 {
                     case 1:
-                        return SpeedUnit.Kilometer;
+                        return Kilometer;
                     case 2:
-                        return SpeedUnit.Knot;
+                        return Knot;
                     case 3:
-                        return SpeedUnit.Mach;
+                        return Mach;
                     default:
                         return default(SpeedUnit);
                 }
@@ -162,13 +161,13 @@ namespace RouteParser
                 switch (x)
                 {
                     case "F":
-                        return LevelUnit.FlightLevel;
+                        return FlightLevel;
                     case "S":
-                        return LevelUnit.StandardMetric;
+                        return StandardMetric;
                     case "A":
-                        return LevelUnit.AltitudeInFeet;
+                        return AltitudeInFeet;
                     case "M":
-                        return LevelUnit.AltitudeInMeter;
+                        return AltitudeInMeter;
                     default:
                         return default(LevelUnit);
                 }
@@ -179,13 +178,13 @@ namespace RouteParser
                 switch (x)
                 {
                     case 1:
-                        return LevelUnit.FlightLevel;
+                        return FlightLevel;
                     case 2:
-                        return LevelUnit.StandardMetric;
+                        return StandardMetric;
                     case 3:
-                        return LevelUnit.AltitudeInFeet;
+                        return AltitudeInFeet;
                     case 4:
-                        return LevelUnit.AltitudeInMeter;
+                        return AltitudeInMeter;
                     default:
                         return default(LevelUnit);
                 }
@@ -203,18 +202,18 @@ namespace RouteParser
             {
                 get
                 {
-                    return this._representation;
+                    return _representation;
                 }
             }
             public RouteElement(string representation)
             {
 
-                this._representation = representation;
+                _representation = representation;
             }
         }
         class NamedPoint : RouteElement
         {
-            public static bool isValid(string candidate)
+            public static bool IsValid(string candidate)
             {
                 return Regex.IsMatch(candidate, @"\D{2,5}");
             }
@@ -224,7 +223,7 @@ namespace RouteParser
                 : base(name)
                 
             {
-                this._name = name;
+                _name = name;
             }
         }
         class CoordinatePoint : RouteElement
@@ -232,7 +231,7 @@ namespace RouteParser
             private string _verticalcoordinate;
             private string _horizontalcoordinate;
 
-            public static bool isValid(string candidate)
+            public static bool IsValid(string candidate)
             {
                 return Regex.IsMatch(candidate, @"(?<vertical>(\d{2}|\d{4})[N,S])(?<horizontal>((\d{3}|\d{5})[E,W]))");
             }
@@ -240,8 +239,8 @@ namespace RouteParser
             public CoordinatePoint(string verticalcoordinate, string horizontalcoordinate)
                 :base(verticalcoordinate+horizontalcoordinate)
             {
-                this._verticalcoordinate = verticalcoordinate;
-                this._horizontalcoordinate = horizontalcoordinate;
+                _verticalcoordinate = verticalcoordinate;
+                _horizontalcoordinate = horizontalcoordinate;
             }
         }
         class NavaidPoint:RouteElement
@@ -250,21 +249,21 @@ namespace RouteParser
             private string _bearing;
             private string _distance;
 
-            public static bool isValid(string candidate){
+            public static bool IsValid(string candidate){
                 return Regex.IsMatch(candidate, @"(?<navaid>\w{2,3})(?<bearing>\d{3})(?<distance>\d{3})");
             }
             public NavaidPoint(string navaidname, string bearing, string distance)
                 :base(navaidname+bearing+distance)
             {
-                this._navaidname = navaidname;
-                this._bearing = bearing;
-                this._distance = distance;
+                _navaidname = navaidname;
+                _bearing = bearing;
+                _distance = distance;
                 
             }
             
         }
         class Direct:RouteElement{
-            public static bool isValid(string candidate){
+            public static bool IsValid(string candidate){
                 return Regex.IsMatch(candidate, @"DCT");
             }
             public Direct()
@@ -273,14 +272,14 @@ namespace RouteParser
         }
         class ChangeOfFlightRule:RouteElement{
             private string _flightrule;
-            public static bool isValid(string candidate){
+            public static bool IsValid(string candidate){
                 return Regex.IsMatch(candidate, @"IFR|VFR");
             }
             public ChangeOfFlightRule(string flightrule)
              
             :base(flightrule)
             {
-                this._flightrule = flightrule;
+                _flightrule = flightrule;
             }
         }
         class SpeedLevel:RouteElement{
@@ -289,50 +288,50 @@ namespace RouteParser
             private LevelUnit _levelunit;
             private string _level;
 
-            public static bool isValid(string candidate){
+            public static bool IsValid(string candidate){
                 return Regex.IsMatch(candidate, @"(?<speed>[K,N]\d{4}|M\d{3})(?<clevel>([A,F]\d{3})|[S,M]\d{4})");
             }
             public SpeedLevel(SpeedUnit speedunit, string speed, LevelUnit levelunit, string level)
                 :base(speedunit+speed+levelunit+level)
             {
-                this._speedunit = speedunit;
-                this._speed = speed;
-                this._levelunit = levelunit;
-                this._level = level;
+                _speedunit = speedunit;
+                _speed = speed;
+                _levelunit = levelunit;
+                _level = level;
                 
             }
 
             }
         class Airway:RouteElement{
             private string _designator;
-            public static bool isValid(string candidate){
+            public static bool IsValid(string candidate){
                 return Regex.IsMatch(candidate, @"\w{2,7}");
             }
             public Airway(string designator)
             :base(designator)
             {
-                this._designator =designator;
+                _designator =designator;
 
             }
         }
         class ChangeOfSpeedLevelPoint:RouteElement{
             private string _point;
             private string _changeofspeedlevel;
-            public static bool  isValid(string candidate){
+            public static bool  IsValid(string candidate){
                 string [] candidateparts = candidate.Split('/');
                 if(candidateparts.Length == 2){
                     string pointpart = candidateparts[0];
                     string speedlevelpart = candidateparts[1];
                     //Check pointpart for each category and check speedlevel part.
-                    return SpeedLevel.isValid(speedlevelpart) & (NavaidPoint.isValid(pointpart)|CoordinatePoint.isValid(pointpart)|NamedPoint.isValid(pointpart));
+                    return SpeedLevel.IsValid(speedlevelpart) & (NavaidPoint.IsValid(pointpart)|CoordinatePoint.IsValid(pointpart)|NamedPoint.IsValid(pointpart));
                 }
                 return false;
             }
             public ChangeOfSpeedLevelPoint(string point, string changeofspeedlevel)
             :base(point+"/"+changeofspeedlevel)
             {
-                this._point = point;
-                this._changeofspeedlevel = changeofspeedlevel;
+                _point = point;
+                _changeofspeedlevel = changeofspeedlevel;
 
             }
 
@@ -344,12 +343,13 @@ namespace RouteParser
         /// </summary>
         class RouteElementFactory
         {
+            //Messy code below, BEWARE!
             public static RouteElement GetRouteElement(RouteElement previous, string current, string next)
             {
-                RouteElement element = null;
+                RouteElement element;
 
                 //Check Direct
-                if (Direct.isValid(current))
+                if (Direct.IsValid(current))
                 {
                     //Create a new Direct element
                     element = new Direct();
@@ -359,7 +359,7 @@ namespace RouteParser
                 if (previous == null)
                 {
                     //Either speedlevel or airway
-                    if (SpeedLevel.isValid(current))
+                    if (SpeedLevel.IsValid(current))
                     {
                         //Create a new SpeedLevel element
                         //Split into speed and level parts
@@ -371,7 +371,7 @@ namespace RouteParser
                         //Get units for speed and level
                         spunit = speed.Substring(0,1);
                         lvlunit = level.Substring(0,1);
-                        Console.WriteLine(string.Format("Speed unit {0}, Level unit {1}", spunit, lvlunit));
+                        Console.WriteLine("Speed unit {0}, Level unit {1}", spunit, lvlunit);
                         speed = speed.Substring(1);
                         level = level.Substring(1);
                         element = new SpeedLevel(spunit, speed, lvlunit, level);
@@ -390,7 +390,7 @@ namespace RouteParser
                     {
                         //Either NamedPoint, CoordinatePoint or NavaidPoint or STAR(TO BE IMPLEMENTED)
                         //Check NavaidPoint
-                        if (NavaidPoint.isValid(current))
+                        if (NavaidPoint.IsValid(current))
                         {
                             //Create NavaidPoint
                             Match m = Regex.Match(current, @"(?<navaid>\w{2,3})(?<bearing>\d{3})(?<distance>\d{3})");
@@ -401,7 +401,7 @@ namespace RouteParser
                             element = new NavaidPoint(navaid, bearing, distance);
                         }
                         //Check CoordinatePoint
-                        else if (CoordinatePoint.isValid(current))
+                        else if (CoordinatePoint.IsValid(current))
                         {
                             //Create CoordinatePoint
                             Match m = Regex.Match(current, @"(?<vertical>(\d{2}|\d{4})[N,S])(?<horizontal>((\d{3}|\d{5})[E,W]))");
@@ -421,19 +421,19 @@ namespace RouteParser
                     {
                         //Either ChangeOfFlightRule, ChangeOfSpeedLevelPoint, NavaidPoint, CoordinatePoint, NamedPoint or Airway
                         //Check ChangeOfFlightRule
-                        if (ChangeOfFlightRule.isValid(current))
+                        if (ChangeOfFlightRule.IsValid(current))
                         {
                             element = new ChangeOfFlightRule(current);
                         }
                         //Check ChangeOfSpeedLevelPoint
-                        else if (ChangeOfSpeedLevelPoint.isValid(current))
+                        else if (ChangeOfSpeedLevelPoint.IsValid(current))
                         {
                             string[] currentparts = current.Split('/');
                             element = new ChangeOfSpeedLevelPoint(currentparts[0], currentparts[1]);
                             return element;
                         }
                         //Check NavaidPoint
-                        else if (NavaidPoint.isValid(current))
+                        else if (NavaidPoint.IsValid(current))
                         {
                             //Create NavaidPoint
                             Match m = Regex.Match(current, @"(?<navaid>\w{2,3})(?<bearing>\d{3})(?<distance>\d{3})");
@@ -444,7 +444,7 @@ namespace RouteParser
                             element = new NavaidPoint(navaid, bearing, distance);
                         }
                         //Check CoordinatePoint
-                        else if (CoordinatePoint.isValid(current))
+                        else if (CoordinatePoint.IsValid(current))
                         {
                             //Create CoordinatePoint
                             Match m = Regex.Match(current, @"(?<vertical>(\d{2}|\d{4})[N,S])(?<horizontal>((\d{3}|\d{5})[E,W]))");
@@ -471,7 +471,7 @@ namespace RouteParser
             }
         }
         //Attributes
-        private List<RouteElement> routeElements;
+        private List<RouteElement> _routeElements;
         /// <summary>
         /// Constructs a route object from a given string in ICAO Route Plan format
         /// 
@@ -480,21 +480,21 @@ namespace RouteParser
         /// <param name="routestring"></param>
         public Route(string routestring)
         {
-            this.routeElements = new List<RouteElement>();
-            //Split string into elements
+            _routeElements = new List<RouteElement>();
+            //Split string into tokens
             string[] routestringparts = routestring.Split(' ');
             //Create first element
             RouteElement firstElement = RouteElementFactory.GetRouteElement(null, routestringparts[0], routestringparts[1]);
-            this.routeElements.Add(firstElement);
+            _routeElements.Add(firstElement);
             //Create middle elements //CHECK FOR OFF BY ONE ERROR
             for (int i = 1; i < routestringparts.Length-1; i++)
             {
-                RouteElement tempElement = RouteElementFactory.GetRouteElement(this.routeElements[this.routeElements.Count-1], routestringparts[i], routestringparts[i + 1]);
-                this.routeElements.Add(tempElement);
+                RouteElement tempElement = RouteElementFactory.GetRouteElement(_routeElements[_routeElements.Count-1], routestringparts[i], routestringparts[i + 1]);
+                _routeElements.Add(tempElement);
             }
             //Create last element
-            RouteElement lastElement = RouteElementFactory.GetRouteElement(this.routeElements[this.routeElements.Count - 1], routestringparts[routestringparts.Length - 1], string.Empty);
-            this.routeElements.Add(lastElement);
+            RouteElement lastElement = RouteElementFactory.GetRouteElement(_routeElements[_routeElements.Count - 1], routestringparts[routestringparts.Length - 1], string.Empty);
+            _routeElements.Add(lastElement);
         }
         /// <summary>
         /// Prints out the representation and type of each route element in the current instance on a new line
@@ -503,9 +503,9 @@ namespace RouteParser
         public override string ToString()
         {
             StringBuilder strbuilder = new StringBuilder();
-            foreach (RouteElement element in this.routeElements)
+            foreach (RouteElement element in _routeElements)
             {
-                strbuilder.Append(string.Format("Representation is {0}, Type is {1}\n", element.representation, element.ToString()));
+                strbuilder.Append(string.Format("Representation is {0}, Type is {1}\n", element.representation, element));
             }
             return strbuilder.ToString();            
         }
