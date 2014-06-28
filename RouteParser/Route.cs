@@ -242,6 +242,16 @@ namespace RouteParser
                 _verticalcoordinate = verticalcoordinate;
                 _horizontalcoordinate = horizontalcoordinate;
             }
+
+            public CoordinatePoint(string representation)
+            :base(representation)
+            {
+                Match m = Regex.Match(representation, @"(?<vertical>(\d{2}|\d{4})[N,S])(?<horizontal>((\d{3}|\d{5})[E,W]))");
+                string vertical = m.Groups["vertical"].Value;
+                string horizontal = m.Groups["horizontal"].Value;
+                this._verticalcoordinate = vertical;
+                this._horizontalcoordinate = horizontal;
+            }
         }
         class NavaidPoint:RouteElement
         {
@@ -257,8 +267,17 @@ namespace RouteParser
             {
                 _navaidname = navaidname;
                 _bearing = bearing;
-                _distance = distance;
-                
+                _distance = distance;                 
+            }
+
+            public NavaidPoint(string representation)
+            :base(representation)
+            {
+                //Create NavaidPoint from string
+                Match m = Regex.Match(representation, @"(?<navaid>\w{2,3})(?<bearing>\d{3})(?<distance>\d{3})");
+                this._navaidname = m.Groups["navaid"].Value;
+                this._bearing = m.Groups["bearing"].Value;
+                this._distance = m.Groups["distance"].Value;
             }
             
         }
@@ -294,13 +313,25 @@ namespace RouteParser
             public SpeedLevel(SpeedUnit speedunit, string speed, LevelUnit levelunit, string level)
                 :base(speedunit+speed+levelunit+level)
             {
-                _speedunit = speedunit;
-                _speed = speed;
-                _levelunit = levelunit;
-                _level = level;
+                this._speedunit = speedunit;
+                this._speed = speed;
+                this._levelunit = levelunit;
+                this._level = level;
                 
             }
 
+            public SpeedLevel(string representation)
+            :base(representation)
+            {
+                Match m = Regex.Match(representation, @"(?<speed>[K,N]\d{4}|M\d{3})(?<level>([A,F]\d{3})|[S,M]\d{4})");
+                string speed = m.Groups["speed"].Value;
+                string level = m.Groups["level"].Value;
+                //Get units for speed and level
+                this._speedunit = speed.Substring(0, 1);
+                this._levelunit = level.Substring(0, 1);
+                this._speed = speed.Substring(1);
+                this._level = level.Substring(1);
+            }
             }
         class Airway:RouteElement{
             private string _designator;
@@ -346,14 +377,11 @@ namespace RouteParser
             //Messy code below, BEWARE!
             public static RouteElement GetRouteElement(RouteElement previous, string current, string next)
             {
-                RouteElement element;
-
                 //Check Direct
                 if (Direct.IsValid(current))
                 {
                     //Create a new Direct element
-                    element = new Direct();
-                    return element;
+                    return new Direct();
                 }
                 //First element
                 if (previous == null)
@@ -361,25 +389,12 @@ namespace RouteParser
                     //Either speedlevel or airway
                     if (SpeedLevel.IsValid(current))
                     {
-                        //Create a new SpeedLevel element
-                        //Split into speed and level parts
-                        Match m = Regex.Match(current, @"(?<speed>[K,N]\d{4}|M\d{3})(?<level>([A,F]\d{3})|[S,M]\d{4})");
-                        string speed = m.Groups["speed"].Value;
-                        string level = m.Groups["level"].Value;
-                        SpeedUnit spunit;
-                        LevelUnit lvlunit;
-                        //Get units for speed and level
-                        spunit = speed.Substring(0,1);
-                        lvlunit = level.Substring(0,1);
-                        Console.WriteLine("Speed unit {0}, Level unit {1}", spunit, lvlunit);
-                        speed = speed.Substring(1);
-                        level = level.Substring(1);
-                        element = new SpeedLevel(spunit, speed, lvlunit, level);
+                        return new SpeedLevel(current);
                     }
                     //Definitely airway
                     else
                     {
-                        element = new Airway(current);
+                        return new Airway(current);
                     }
                 }
                 //Middle element or last element
@@ -393,26 +408,17 @@ namespace RouteParser
                         if (NavaidPoint.IsValid(current))
                         {
                             //Create NavaidPoint
-                            Match m = Regex.Match(current, @"(?<navaid>\w{2,3})(?<bearing>\d{3})(?<distance>\d{3})");
-                            string navaid = m.Groups["navaid"].Value;
-                            string bearing = m.Groups["bearing"].Value;
-                            string distance = m.Groups["distance"].Value;
-
-                            element = new NavaidPoint(navaid, bearing, distance);
+                            return new NavaidPoint(current);
                         }
                         //Check CoordinatePoint
                         else if (CoordinatePoint.IsValid(current))
                         {
-                            //Create CoordinatePoint
-                            Match m = Regex.Match(current, @"(?<vertical>(\d{2}|\d{4})[N,S])(?<horizontal>((\d{3}|\d{5})[E,W]))");
-                            string vertical = m.Groups["vertical"].Value;
-                            string horizontal = m.Groups["horizontal"].Value;
-
-                            element = new CoordinatePoint(vertical, horizontal);
+                            //Create CoordinatePoint                            
+                            return new CoordinatePoint(current);
                         }
                         //Definitely NamedPoint
                         else{
-                            element = new NamedPoint(current);
+                            return new NamedPoint(current);
                         }
 
                     }
@@ -423,51 +429,41 @@ namespace RouteParser
                         //Check ChangeOfFlightRule
                         if (ChangeOfFlightRule.IsValid(current))
                         {
-                            element = new ChangeOfFlightRule(current);
+                            return new ChangeOfFlightRule(current);
                         }
                         //Check ChangeOfSpeedLevelPoint
                         else if (ChangeOfSpeedLevelPoint.IsValid(current))
                         {
                             string[] currentparts = current.Split('/');
-                            element = new ChangeOfSpeedLevelPoint(currentparts[0], currentparts[1]);
-                            return element;
+                            return new ChangeOfSpeedLevelPoint(currentparts[0], currentparts[1]);
                         }
                         //Check NavaidPoint
                         else if (NavaidPoint.IsValid(current))
                         {
                             //Create NavaidPoint
-                            Match m = Regex.Match(current, @"(?<navaid>\w{2,3})(?<bearing>\d{3})(?<distance>\d{3})");
-                            string navaid = m.Groups["navaid"].Value;
-                            string bearing = m.Groups["bearing"].Value;
-                            string distance = m.Groups["distance"].Value;
 
-                            element = new NavaidPoint(navaid, bearing, distance);
+                            return new NavaidPoint(current);
                         }
                         //Check CoordinatePoint
                         else if (CoordinatePoint.IsValid(current))
                         {
                             //Create CoordinatePoint
-                            Match m = Regex.Match(current, @"(?<vertical>(\d{2}|\d{4})[N,S])(?<horizontal>((\d{3}|\d{5})[E,W]))");
-                            string vertical = m.Groups["vertical"].Value;
-                            string horizontal = m.Groups["horizontal"].Value;
-
-                            element = new CoordinatePoint(vertical, horizontal);
+                            return new CoordinatePoint(current);
                         }
                         //Either NamedPoint or Airway
                         //Find the type of previous element
                         else if (previous is Airway | previous is SpeedLevel | previous is Direct)
                         {
                             //Current is a NamedPoint
-                            element = new NamedPoint(current);
+                            return new NamedPoint(current);
                         }
                         else
                         {
                             //Current is an Airway
-                            element = new Airway(current);
+                            return new Airway(current);
                         }
                     }
                 }
-                return element;
             }
         }
         //Attributes
