@@ -211,7 +211,14 @@ namespace RouteParser
                 _representation = representation;
             }
         }
-        class NamedPoint : RouteElement
+        abstract class SignificantPoint : RouteElement
+        {
+            public SignificantPoint(string representation)
+            :base(representation)
+            {
+            }
+        }
+        class NamedPoint : SignificantPoint
         {
             public static bool IsValid(string candidate)
             {
@@ -226,7 +233,7 @@ namespace RouteParser
                 _name = name;
             }
         }
-        class CoordinatePoint : RouteElement
+        class CoordinatePoint : SignificantPoint
         {
             private string _verticalcoordinate;
             private string _horizontalcoordinate;
@@ -253,7 +260,7 @@ namespace RouteParser
                 this._horizontalcoordinate = horizontal;
             }
         }
-        class NavaidPoint:RouteElement
+        class NavaidPoint:SignificantPoint
         {
             private string _navaidname;
             private string _bearing;
@@ -346,8 +353,8 @@ namespace RouteParser
             }
         }
         class ChangeOfSpeedLevelPoint:RouteElement{
-            private string _point;
-            private string _changeofspeedlevel;
+            private SignificantPoint _point;
+            private SpeedLevel _changeofspeedlevel;
             public static bool  IsValid(string candidate){
                 string [] candidateparts = candidate.Split('/');
                 if(candidateparts.Length == 2){
@@ -358,11 +365,11 @@ namespace RouteParser
                 }
                 return false;
             }
-            public ChangeOfSpeedLevelPoint(string point, string changeofspeedlevel)
-            :base(point+"/"+changeofspeedlevel)
+            public ChangeOfSpeedLevelPoint(SignificantPoint point, SpeedLevel changeofspeedlevel)
+            :base(string.Format("{0}/{1}", point.representation, changeofspeedlevel.representation))
             {
-                _point = point;
-                _changeofspeedlevel = changeofspeedlevel;
+                this._point = point;
+                this._changeofspeedlevel = changeofspeedlevel;
 
             }
 
@@ -375,6 +382,25 @@ namespace RouteParser
         class RouteElementFactory
         {
             //Messy code below, BEWARE!
+            public static SignificantPoint GetSignificantPoint(string current)
+            {
+                if (NavaidPoint.IsValid(current))
+                {
+                    //Create NavaidPoint
+                    return new NavaidPoint(current);
+                }
+                //Check CoordinatePoint
+                else if (CoordinatePoint.IsValid(current))
+                {
+                    //Create CoordinatePoint                            
+                    return new CoordinatePoint(current);
+                }
+                //Definitely NamedPoint
+                else
+                {
+                    return new NamedPoint(current);
+                }
+            }
             public static RouteElement GetRouteElement(RouteElement previous, string current, string next)
             {
                 //Check Direct
@@ -404,22 +430,7 @@ namespace RouteParser
                     if (next.Equals(string.Empty))
                     {
                         //Either NamedPoint, CoordinatePoint or NavaidPoint or STAR(TO BE IMPLEMENTED)
-                        //Check NavaidPoint
-                        if (NavaidPoint.IsValid(current))
-                        {
-                            //Create NavaidPoint
-                            return new NavaidPoint(current);
-                        }
-                        //Check CoordinatePoint
-                        else if (CoordinatePoint.IsValid(current))
-                        {
-                            //Create CoordinatePoint                            
-                            return new CoordinatePoint(current);
-                        }
-                        //Definitely NamedPoint
-                        else{
-                            return new NamedPoint(current);
-                        }
+                        return GetSignificantPoint(current);
 
                     }
                     //Middle element
@@ -434,28 +445,24 @@ namespace RouteParser
                         //Check ChangeOfSpeedLevelPoint
                         else if (ChangeOfSpeedLevelPoint.IsValid(current))
                         {
+                            
                             string[] currentparts = current.Split('/');
-                            return new ChangeOfSpeedLevelPoint(currentparts[0], currentparts[1]);
+                            SignificantPoint _significantPoint = GetSignificantPoint(currentparts[0]);
+                            SpeedLevel _speedLevel = new SpeedLevel(currentparts[1]);
+                            return new ChangeOfSpeedLevelPoint(_significantPoint, _speedLevel);
                         }
-                        //Check NavaidPoint
-                        else if (NavaidPoint.IsValid(current))
-                        {
-                            //Create NavaidPoint
-
-                            return new NavaidPoint(current);
-                        }
-                        //Check CoordinatePoint
+                        //Check CoordinatePoint before checking airway since they can be adjacent
                         else if (CoordinatePoint.IsValid(current))
                         {
-                            //Create CoordinatePoint
+                            //Create CoordinatePoint                            
                             return new CoordinatePoint(current);
                         }
-                        //Either NamedPoint or Airway
+                        //Either SignificantPoint or Airway
                         //Find the type of previous element
                         else if (previous is Airway | previous is SpeedLevel | previous is Direct)
                         {
                             //Current is a NamedPoint
-                            return new NamedPoint(current);
+                            return GetSignificantPoint(current);
                         }
                         else
                         {
